@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -8,6 +9,12 @@ namespace EntityLengths.Generator;
 [Generator]
 public class EntityMaxLengthGenerator : IIncrementalGenerator
 {
+    // Regular expression to extract length from varchar/nvarchar type definition
+    private static readonly Regex VarCharLengthPattern = new(
+        @"(?:var)?char\((\d+)\)",
+        RegexOptions.IgnoreCase
+    );
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Find entity type configuration classes
@@ -100,15 +107,56 @@ public class EntityMaxLengthGenerator : IIncrementalGenerator
 
             var maxLengthAttribute = member
                 .GetAttributes()
-                .FirstOrDefault(a => a.AttributeClass?.Name == "MaxLengthAttribute");
+                .FirstOrDefault(a =>
+                    string.Equals(
+                        a.AttributeClass?.Name,
+                        "MaxLengthAttribute",
+                        StringComparison.Ordinal
+                    )
+                );
 
             if (
-                maxLengthAttribute != null
-                && maxLengthAttribute.ConstructorArguments.Length > 0
+                maxLengthAttribute is { ConstructorArguments.Length: > 0 }
                 && maxLengthAttribute.ConstructorArguments[0].Value is int maxLength
             )
             {
                 stringPropertiesWithMaxLength.Add(new PropertyMaxLength(member.Name, maxLength));
+                continue;
+            }
+
+            // Check for Column attribute with TypeName
+            var columnAttribute = member
+                .GetAttributes()
+                .FirstOrDefault(a =>
+                    string.Equals(
+                        a.AttributeClass?.Name,
+                        "ColumnAttribute",
+                        StringComparison.Ordinal
+                    )
+                );
+
+            if (columnAttribute != null)
+            {
+                var typeNameArg = columnAttribute
+                    .NamedArguments.FirstOrDefault(arg =>
+                        string.Equals(arg.Key, "TypeName", StringComparison.Ordinal)
+                    )
+                    .Value;
+
+                if (!typeNameArg.IsNull)
+                {
+                    var typeNameValue = typeNameArg.Value?.ToString();
+                    if (!string.IsNullOrEmpty(typeNameValue))
+                    {
+                        var match = VarCharLengthPattern.Match(typeNameValue);
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out var length))
+                        {
+                            stringPropertiesWithMaxLength.Add(
+                                new PropertyMaxLength(member.Name, length)
+                            );
+                        }
+                    }
+                }
             }
         }
 

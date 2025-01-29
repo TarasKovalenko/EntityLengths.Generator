@@ -7,5 +7,11 @@ public abstract class Program
         Console.WriteLine(EntityLengths.User.NameLength);
 
         Console.WriteLine(EntityLengths.Organization.NameLength);
+
+        Console.WriteLine(EntityLengths.Blog.UrlLength);
+
+        Console.WriteLine(EntityLengths.Blog.DescriptionLength);
+
+        Console.WriteLine(EntityLengths.Blog.CodeLength);
     }
 }
