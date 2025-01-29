@@ -5,5 +5,7 @@ public abstract class Program
     public static void Main()
     {
         Console.WriteLine(EntityLengths.User.NameLength);
+
+        Console.WriteLine(EntityLengths.Organization.NameLength);
     }
 }

@@ -4,11 +4,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D9D6AABE-DCD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6DF2B2EA-130F-427B-A61D-E153B5D938BC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator", "EntityLengths.Generator\EntityLengths.Generator\EntityLengths.Generator.csproj", "{F7847EAA-4D47-4180-9C86-0F1738A45573}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator", "src\EntityLengths.Generator\EntityLengths.Generator.csproj", "{F7847EAA-4D47-4180-9C86-0F1738A45573}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator.Tests", "EntityLengths.Generator\EntityLengths.Generator.Tests\EntityLengths.Generator.Tests.csproj", "{71E8CAA4-F0B9-4066-8DF8-078E1B9CC476}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator.Tests", "tests\EntityLengths.Generator.Tests\EntityLengths.Generator.Tests.csproj", "{71E8CAA4-F0B9-4066-8DF8-078E1B9CC476}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator.Sample", "EntityLengths.Generator.Sample\EntityLengths.Generator.Sample.csproj", "{BB1E9BFB-AAC4-4539-884F-A98BAFCA75BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityLengths.Generator.Sample", "src\EntityLengths.Generator.Sample\EntityLengths.Generator.Sample.csproj", "{BB1E9BFB-AAC4-4539-884F-A98BAFCA75BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
