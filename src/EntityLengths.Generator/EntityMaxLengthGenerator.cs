@@ -1,7 +1,11 @@
 using System.Collections.Immutable;
-using System.Text.RegularExpressions;
+using System.Text;
+using EntityLengths.Generator.Attributes;
+using EntityLengths.Generator.Configuration;
+using EntityLengths.Generator.Core;
+using EntityLengths.Generator.Extensions;
+using EntityLengths.Generator.Models;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace EntityLengths.Generator;
@@ -9,36 +13,33 @@ namespace EntityLengths.Generator;
 [Generator]
 public class EntityMaxLengthGenerator : IIncrementalGenerator
 {
-    // Regular expression to extract length from varchar/nvarchar type definition
-    private static readonly Regex VarCharLengthPattern = new(
-        @"(?:var)?char\((\d+)\)",
-        RegexOptions.IgnoreCase
-    );
+    private const string EntityTypeConfigurationInterface = "IEntityTypeConfiguration";
+
+    private readonly IPropertyLengthExtractor _fluentExtractor = new FluentConfigurationExtractor();
+    private readonly IPropertyLengthExtractor _attributeExtractor = new AttributeExtractor();
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Find entity type configuration classes
         var providerConfigTypes = context
             .SyntaxProvider.CreateSyntaxProvider(
                 predicate: (s, _) => IsEntityConfigurationClass(s),
-                transform: (syntaxContext, _) => GetEntityTypeConfigurationInfo(syntaxContext)
+                transform: (syntaxContext, _) =>
+                    _fluentExtractor.ExtractPropertyLengths(syntaxContext)
             )
             .Where(x => x != null);
 
-        // Find entity classes with string properties that have MaxLength attribute
         var entityTypesWithAttributes = context
             .SyntaxProvider.CreateSyntaxProvider(
                 predicate: (s, _) => s is ClassDeclarationSyntax,
-                transform: (syntaxContext, _) => GetEntityTypeInfoWithAttributes(syntaxContext)
+                transform: (syntaxContext, _) =>
+                    _attributeExtractor.ExtractPropertyLengths(syntaxContext)
             )
             .Where(x => x != null);
 
-        // Combine the found configurations and attribute-based configurations
         var compilationAndConfigurations = context
             .CompilationProvider.Combine(providerConfigTypes.Collect())
             .Combine(entityTypesWithAttributes.Collect());
 
-        // Generate the output
         context.RegisterSourceOutput(
             compilationAndConfigurations,
             (spc, source) =>
@@ -50,237 +51,67 @@ public class EntityMaxLengthGenerator : IIncrementalGenerator
     {
         return syntaxNode is ClassDeclarationSyntax classSyntax
             && classSyntax.BaseList?.Types.Any(t =>
-                t.Type.ToString().StartsWith("IEntityTypeConfiguration")
+                t.Type.ToString().StartsWith(EntityTypeConfigurationInterface)
             ) == true;
-    }
-
-    private static EntityConfigurationInfo? GetEntityTypeConfigurationInfo(
-        GeneratorSyntaxContext context
-    )
-    {
-        var classSyntax = (ClassDeclarationSyntax)context.Node;
-        var semanticModel = context.SemanticModel;
-
-        // Find the generic type parameter of IEntityTypeConfiguration<T>
-        var baseType = classSyntax
-            .BaseList?.Types.Select(t => semanticModel.GetTypeInfo(t.Type).Type)
-            .FirstOrDefault(t => t?.Name.StartsWith("IEntityTypeConfiguration") == true);
-
-        if (baseType is null)
-        {
-            return null;
-        }
-
-        // Get the entity type
-        var entityType = (baseType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault();
-        if (entityType is null)
-        {
-            return null;
-        }
-
-        // Find properties with HasMaxLength configuration
-        var maxLengthProperties = FindMaxLengthProperties(classSyntax);
-
-        return new EntityConfigurationInfo(entityType, maxLengthProperties);
-    }
-
-    private static EntityTypeInfo? GetEntityTypeInfoWithAttributes(GeneratorSyntaxContext context)
-    {
-        var classSyntax = (ClassDeclarationSyntax)context.Node;
-        var semanticModel = context.SemanticModel;
-        var classSymbol = semanticModel.GetDeclaredSymbol(classSyntax);
-
-        if (classSymbol is null)
-        {
-            return null;
-        }
-
-        // Get string properties with MaxLength attribute
-        var stringPropertiesWithMaxLength = new List<PropertyMaxLength>();
-
-        foreach (var member in classSymbol.GetMembers().OfType<IPropertySymbol>())
-        {
-            if (member.Type.SpecialType != SpecialType.System_String)
-            {
-                continue;
-            }
-
-            var maxLengthAttribute = member
-                .GetAttributes()
-                .FirstOrDefault(a =>
-                    string.Equals(
-                        a.AttributeClass?.Name,
-                        "MaxLengthAttribute",
-                        StringComparison.Ordinal
-                    )
-                );
-
-            if (
-                maxLengthAttribute is { ConstructorArguments.Length: > 0 }
-                && maxLengthAttribute.ConstructorArguments[0].Value is int maxLength
-            )
-            {
-                stringPropertiesWithMaxLength.Add(new PropertyMaxLength(member.Name, maxLength));
-                continue;
-            }
-
-            // Check for Column attribute with TypeName
-            var columnAttribute = member
-                .GetAttributes()
-                .FirstOrDefault(a =>
-                    string.Equals(
-                        a.AttributeClass?.Name,
-                        "ColumnAttribute",
-                        StringComparison.Ordinal
-                    )
-                );
-
-            if (columnAttribute != null)
-            {
-                var typeNameArg = columnAttribute
-                    .NamedArguments.FirstOrDefault(arg =>
-                        string.Equals(arg.Key, "TypeName", StringComparison.Ordinal)
-                    )
-                    .Value;
-
-                if (!typeNameArg.IsNull)
-                {
-                    var typeNameValue = typeNameArg.Value?.ToString();
-                    if (!string.IsNullOrEmpty(typeNameValue))
-                    {
-                        var match = VarCharLengthPattern.Match(typeNameValue);
-                        if (match.Success && int.TryParse(match.Groups[1].Value, out var length))
-                        {
-                            stringPropertiesWithMaxLength.Add(
-                                new PropertyMaxLength(member.Name, length)
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        return stringPropertiesWithMaxLength.Any()
-            ? new EntityTypeInfo(classSymbol, stringPropertiesWithMaxLength)
-            : null;
-    }
-
-    private static List<PropertyMaxLength> FindMaxLengthProperties(
-        ClassDeclarationSyntax classSyntax
-    )
-    {
-        var maxLengthProperties = new List<PropertyMaxLength>();
-
-        // Find HasMaxLength invocations
-        var maxLengthInvocations = classSyntax
-            .DescendantNodes()
-            .OfType<InvocationExpressionSyntax>()
-            .Where(inv => inv.Expression.ToString().EndsWith("HasMaxLength"));
-
-        foreach (var invocation in maxLengthInvocations)
-        {
-            // Extract property name from lambda expression
-            var lambdaExpr = invocation
-                .DescendantNodes()
-                .OfType<SimpleLambdaExpressionSyntax>()
-                .FirstOrDefault();
-
-            var propertyAccess = lambdaExpr?.Body as MemberAccessExpressionSyntax;
-            var propertyName = propertyAccess?.Name.Identifier.Text ?? string.Empty;
-
-            if (string.IsNullOrEmpty(propertyName))
-            {
-                continue;
-            }
-
-            // Extract max length
-            var maxLengthArg = invocation.ArgumentList.Arguments.FirstOrDefault();
-            if (int.TryParse(maxLengthArg?.ToString(), out var maxLength))
-            {
-                maxLengthProperties.Add(new PropertyMaxLength(propertyName, maxLength));
-            }
-        }
-
-        return maxLengthProperties;
     }
 
     private static void GenerateEntityLengthsFile(
         SourceProductionContext context,
         Compilation compilation,
-        ImmutableArray<EntityConfigurationInfo?> fluentConfigurations,
+        ImmutableArray<EntityTypeInfo?> fluentConfigurations,
         ImmutableArray<EntityTypeInfo?> attributeConfigurations
     )
     {
-        var sourceBuilder = new System.Text.StringBuilder();
+        var sourceBuilder = new StringBuilder();
         sourceBuilder.AppendLine("// <auto-generated/>");
-
-        var projectNamespace = compilation.AssemblyName;
-        sourceBuilder.AppendLine($"namespace {projectNamespace};");
+        sourceBuilder.AppendLine($"namespace {compilation.AssemblyName};");
         sourceBuilder.AppendLine();
         sourceBuilder.AppendLine("public static partial class EntityLengths \r\n{");
 
-        // Process fluent configurations
-        for (var index = 0; index < fluentConfigurations.Length; index++)
-        {
-            var configuration = fluentConfigurations[index];
-            if (configuration is null)
-            {
-                continue;
-            }
-
-            GenerateEntityClass(
-                sourceBuilder,
-                configuration.EntityType.Name,
-                configuration.MaxLengthProperties
-            );
-
-            if (index < fluentConfigurations.Length - 1)
-            {
-                sourceBuilder.AppendLine();
-            }
-        }
+        GenerateConfigurationClasses(sourceBuilder, fluentConfigurations);
 
         if (attributeConfigurations.Any() && fluentConfigurations.Any())
         {
             sourceBuilder.AppendLine();
         }
 
-        // Process attribute configurations
-        for (var index = 0; index < attributeConfigurations.Length; index++)
-        {
-            var configuration = attributeConfigurations[index];
-            if (configuration is null)
-            {
-                continue;
-            }
-
-            GenerateEntityClass(
-                sourceBuilder,
-                configuration.EntityType.Name,
-                configuration.StringProperties
-            );
-
-            if (index < attributeConfigurations.Length - 1)
-            {
-                sourceBuilder.AppendLine();
-            }
-        }
-
+        GenerateConfigurationClasses(sourceBuilder, attributeConfigurations);
         sourceBuilder.AppendLine("}");
 
         context.AddSource("EntityLengths.g.cs", sourceBuilder.ToString());
     }
 
-    private static void GenerateEntityClass(
-        System.Text.StringBuilder sourceBuilder,
-        string entityName,
-        List<PropertyMaxLength> properties
+    private static void GenerateConfigurationClasses(
+        StringBuilder sourceBuilder,
+        ImmutableArray<EntityTypeInfo?> configurations
     )
     {
-        sourceBuilder.AppendLine($"\tpublic static partial class {entityName}");
+        for (var index = 0; index < configurations.Length; index++)
+        {
+            var configuration = configurations[index];
+            if (configuration is null)
+            {
+                continue;
+            }
+
+            GenerateEntityClass(sourceBuilder, configuration);
+
+            if (index < configurations.Length - 1)
+            {
+                sourceBuilder.AppendLine();
+            }
+        }
+    }
+
+    private static void GenerateEntityClass(
+        StringBuilder sourceBuilder,
+        EntityTypeInfo configuration
+    )
+    {
+        sourceBuilder.AppendLine($"\tpublic static partial class {configuration.EntityType.Name}");
         sourceBuilder.AppendLine("\t{");
 
-        foreach (var prop in properties)
+        foreach (var prop in configuration.StringProperties.DistinctBy(p => p.PropertyName))
         {
             sourceBuilder.AppendLine(
                 $"\t\tpublic const int {prop.PropertyName}Length = {prop.MaxLength};"
@@ -288,29 +119,5 @@ public class EntityMaxLengthGenerator : IIncrementalGenerator
         }
 
         sourceBuilder.AppendLine("\t}");
-    }
-
-    private sealed record EntityConfigurationInfo(
-        ITypeSymbol EntityType,
-        List<PropertyMaxLength> MaxLengthProperties
-    )
-    {
-        public ITypeSymbol EntityType { get; } = EntityType;
-        public List<PropertyMaxLength> MaxLengthProperties { get; } = MaxLengthProperties;
-    }
-
-    private sealed record EntityTypeInfo(
-        ITypeSymbol EntityType,
-        List<PropertyMaxLength> StringProperties
-    )
-    {
-        public ITypeSymbol EntityType { get; } = EntityType;
-        public List<PropertyMaxLength> StringProperties { get; } = StringProperties;
-    }
-
-    private sealed record PropertyMaxLength(string PropertyName, int MaxLength)
-    {
-        public string PropertyName { get; } = PropertyName;
-        public int MaxLength { get; } = MaxLength;
     }
 }
