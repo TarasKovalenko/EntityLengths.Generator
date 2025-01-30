@@ -4,7 +4,7 @@ using EntityLengths.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace EntityLengths.Generator.Configuration;
+namespace EntityLengths.Generator.Extractors;
 
 internal class FluentConfigurationExtractor : IPropertyLengthExtractor
 {

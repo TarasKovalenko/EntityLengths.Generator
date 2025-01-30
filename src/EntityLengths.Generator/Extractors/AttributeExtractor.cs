@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace EntityLengths.Generator.Attributes;
+namespace EntityLengths.Generator.Extractors;
 
 internal class AttributeExtractor : IPropertyLengthExtractor
 {

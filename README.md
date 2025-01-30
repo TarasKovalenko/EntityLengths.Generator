@@ -22,6 +22,7 @@ By using this project or its source code, for any purpose and in any shape or fo
       - `[Column(TypeName = "varchar(200)")]`
       - `[Column(TypeName = "nvarchar(200)")]`
       - `[Column(TypeName = "char(200)")]`
+    - DbContext configurations (`OnModelCreating`)
 
 ## Usage
 
@@ -51,6 +52,22 @@ public class UserConfiguration : IEntityTypeConfiguration
             .HasMaxLength(50);
     }
 }
+
+// DbContext configuration
+public class User
+{
+    public required string Surname { get; set; }
+}
+
+public class UserDbContext : DbContext
+{
+    public DbSet<User> Users { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>().Property(b => b.Surname).HasMaxLength(150).IsRequired();
+    }
+}
 ```
 
 Generated output:
@@ -62,6 +79,7 @@ public static partial class EntityLengths
     {
         public const int NameLength = 50;
         public const int UrlLength = 200;
+        public const int SurnameLength = 200;
     }
 }
 ```
