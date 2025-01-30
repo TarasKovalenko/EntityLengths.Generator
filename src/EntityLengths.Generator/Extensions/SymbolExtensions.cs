@@ -8,6 +8,7 @@ internal static class SymbolExtensions
     private const string MaxLengthAttribute = "MaxLengthAttribute";
     private const string ColumnAttribute = "ColumnAttribute";
     private const string TypeName = "TypeName";
+    private const string StringLengthAttribute = "StringLengthAttribute";
 
     public static bool TryGetMaxLengthFromAttribute(
         this IPropertySymbol property,
@@ -71,5 +72,39 @@ internal static class SymbolExtensions
 
         var match = RegexPatterns.VarCharLength.Match(typeNameValue);
         return match.Success && int.TryParse(match.Groups[1].Value, out maxLength);
+    }
+
+    public static bool TryGetStringLengthFromAttribute(
+        this IPropertySymbol property,
+        out int maxLength
+    )
+    {
+        maxLength = 0;
+
+        var attribute = property
+            .GetAttributes()
+            .FirstOrDefault(a =>
+                string.Equals(
+                    a.AttributeClass?.Name,
+                    StringLengthAttribute,
+                    StringComparison.Ordinal
+                )
+            );
+
+        if (attribute == null)
+        {
+            return false;
+        }
+
+        if (
+            attribute.ConstructorArguments.Length > 0
+            && attribute.ConstructorArguments[0].Value is int max
+        )
+        {
+            maxLength = max;
+            return true;
+        }
+
+        return false;
     }
 }

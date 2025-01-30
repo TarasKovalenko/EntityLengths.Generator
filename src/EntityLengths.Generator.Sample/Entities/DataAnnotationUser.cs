@@ -15,4 +15,7 @@ public class DataAnnotationUser
         Justification = "<Pending>"
     )]
     public required string Name { get; set; }
+
+    [StringLength(150)]
+    public required string Surname { get; set; }
 }

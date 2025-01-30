@@ -21,7 +21,9 @@ To learn more about the war and how you can help, [click here](https://war.ukrai
 
 - Extracts string length configurations from:
     - EF Core Fluent API configurations (`HasMaxLength`)
-    - Data Annotations (`[MaxLength]`)
+    - Data Annotations
+      - `[MaxLength]`
+      - `[StringLength]`
     - Column type definitions 
       - `[Column(TypeName = "varchar(200)")]`
       - `[Column(TypeName = "nvarchar(200)")]`
@@ -38,6 +40,13 @@ public class User
 {
     [MaxLength(50)]
     public string Name { get; set; }
+}
+
+// Using StringLength attribute
+public class User
+{
+    [StringLength(50)]
+    public string Surname { get; set; }
 }
 
 // Using Column attribute
@@ -82,6 +91,7 @@ public static partial class EntityLengths
     public static partial class User
     {
         public const int NameLength = 50;
+        public const int SurnameLength = 50;
         public const int UrlLength = 200;
         public const int SurnameLength = 200;
     }

@@ -8,6 +8,8 @@ public abstract class Program
 
         Console.WriteLine(EntityLengths.DataAnnotationUser.NameLength);
 
+        Console.WriteLine(EntityLengths.DataAnnotationUser.SurnameLength);
+
         Console.WriteLine(EntityLengths.DbContextUser.NameLength);
 
         Console.WriteLine(EntityLengths.ColumnTypeDefinitionUser.NameLength);

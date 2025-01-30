@@ -39,6 +39,11 @@ internal class AttributeExtractor : IPropertyLengthExtractor
             {
                 stringPropertiesWithMaxLength.Add(new PropertyMaxLength(member.Name, maxLength));
             }
+
+            if (member.TryGetStringLengthFromAttribute(out maxLength))
+            {
+                stringPropertiesWithMaxLength.Add(new PropertyMaxLength(member.Name, maxLength));
+            }
         }
 
         return stringPropertiesWithMaxLength.Any()

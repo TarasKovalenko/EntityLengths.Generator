@@ -34,6 +34,18 @@ public class User
     public required string Name { get; set; }
 }";
 
+    public const string DataAnnotationsStringLengthEntity =
+        @"
+using System.ComponentModel.DataAnnotations;
+
+namespace TestNamespace;
+
+public class User
+{
+    [StringLength(50)]
+    public required string Name { get; set; }
+}";
+
     public const string ColumnTypeDefinitionEntity =
         @"
 using System.ComponentModel.DataAnnotations.Schema;

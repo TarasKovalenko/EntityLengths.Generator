@@ -149,4 +149,20 @@ public class EntityMaxLengthGeneratorTests
         // Assert
         GeneratorTestHelper.AssertGeneratedOutput(result, TestSources.ExpectedOutput);
     }
+
+    [Fact]
+    public void Generate_EntityLength_With_DataAnnotations_StringLength()
+    {
+        // Arrange
+        var compilation = CompilationBuilder.CreateCompilation(
+            TestSources.DataAnnotationsStringLengthEntity,
+            includeDataAnnotations: true
+        );
+
+        // Act
+        var result = _driver.RunGenerators(compilation).GetRunResult();
+
+        // Assert
+        GeneratorTestHelper.AssertGeneratedOutput(result, TestSources.ExpectedOutput);
+    }
 }
