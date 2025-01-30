@@ -30,7 +30,7 @@ To learn more about the war and how you can help, [click here](https://war.ukrai
 
 ## Usage
 
-The generator supports three ways to define string lengths:
+The generator supports a few ways to define string lengths:
 
 ```csharp
 // Using MaxLength attribute
