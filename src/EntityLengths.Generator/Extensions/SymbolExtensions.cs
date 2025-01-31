@@ -5,11 +5,6 @@ namespace EntityLengths.Generator.Extensions;
 
 internal static class SymbolExtensions
 {
-    private const string MaxLengthAttribute = "MaxLengthAttribute";
-    private const string ColumnAttribute = "ColumnAttribute";
-    private const string TypeName = "TypeName";
-    private const string StringLengthAttribute = "StringLengthAttribute";
-
     public static bool TryGetMaxLengthFromAttribute(
         this IPropertySymbol property,
         out int maxLength
@@ -20,7 +15,11 @@ internal static class SymbolExtensions
         var maxLengthAttribute = property
             .GetAttributes()
             .FirstOrDefault(a =>
-                string.Equals(a.AttributeClass?.Name, MaxLengthAttribute, StringComparison.Ordinal)
+                string.Equals(
+                    a.AttributeClass?.Name,
+                    Constants.MaxLengthAttribute,
+                    StringComparison.Ordinal
+                )
             );
 
         if (
@@ -45,7 +44,11 @@ internal static class SymbolExtensions
         var columnAttribute = property
             .GetAttributes()
             .FirstOrDefault(a =>
-                string.Equals(a.AttributeClass?.Name, ColumnAttribute, StringComparison.Ordinal)
+                string.Equals(
+                    a.AttributeClass?.Name,
+                    Constants.ColumnAttribute,
+                    StringComparison.Ordinal
+                )
             );
 
         if (columnAttribute == null)
@@ -55,7 +58,7 @@ internal static class SymbolExtensions
 
         var typeNameArg = columnAttribute
             .NamedArguments.FirstOrDefault(arg =>
-                string.Equals(arg.Key, TypeName, StringComparison.Ordinal)
+                string.Equals(arg.Key, Constants.TypeName, StringComparison.Ordinal)
             )
             .Value;
 
@@ -86,7 +89,7 @@ internal static class SymbolExtensions
             .FirstOrDefault(a =>
                 string.Equals(
                     a.AttributeClass?.Name,
-                    StringLengthAttribute,
+                    Constants.StringLengthAttribute,
                     StringComparison.Ordinal
                 )
             );

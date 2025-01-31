@@ -1,21 +1,27 @@
-﻿namespace EntityLengths.Generator.Sample;
+﻿using EntityLengths.Generator.Configuration;
+using EntityLengths.Generator.Sample;
 
-public abstract class Program
-{
-    public static void Main()
-    {
-        Console.WriteLine(EntityLengths.FluentUser.NameLength);
+[assembly: EntityLengthsGenerator(
+    GenerateDocumentation = true,
+    GeneratedClassName = "Constants",
+    IncludeNamespaces = ["EntityLengths.Generator.Sample.Entities"],
+    ExcludeNamespaces = ["EntityLengths.Generator.Sample.Entities.Exclude"],
+    ScanNestedNamespaces = true,
+    ScanEntitySuffix = "User",
+    Namespace = "EntityLengths.Generator.Sample",
+    LengthSuffix = "Length"
+)]
 
-        Console.WriteLine(EntityLengths.DataAnnotationUser.NameLength);
+Console.WriteLine(Constants.FluentUser.NameLength);
 
-        Console.WriteLine(EntityLengths.DataAnnotationUser.SurnameLength);
+Console.WriteLine(Constants.DataAnnotationUser.NameLength);
 
-        Console.WriteLine(EntityLengths.DbContextUser.NameLength);
+Console.WriteLine(Constants.DataAnnotationUser.SurnameLength);
 
-        Console.WriteLine(EntityLengths.ColumnTypeDefinitionUser.NameLength);
+Console.WriteLine(Constants.DbContextUser.NameLength);
 
-        Console.WriteLine(EntityLengths.ColumnTypeDefinitionUser.Name1Length);
+Console.WriteLine(Constants.ColumnTypeDefinitionUser.NameLength);
 
-        Console.WriteLine(EntityLengths.ColumnTypeDefinitionUser.Name2Length);
-    }
-}
+Console.WriteLine(Constants.ColumnTypeDefinitionUser.Name1Length);
+
+Console.WriteLine(Constants.ColumnTypeDefinitionUser.Name2Length);

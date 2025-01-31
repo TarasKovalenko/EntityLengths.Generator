@@ -10,7 +10,7 @@ public class DbContextUser
     public required string Name { get; set; }
 }
 
-public class SampleDbContext : DbContext
+public class SampleDbContextUser : DbContext
 {
     public DbSet<DbContextUser> Users { get; set; } = null!;
 

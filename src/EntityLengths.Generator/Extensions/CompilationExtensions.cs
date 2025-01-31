@@ -6,9 +6,6 @@ namespace EntityLengths.Generator.Extensions;
 
 internal static class CompilationExtensions
 {
-    private const string EntityTypeConfigurationInterface = "IEntityTypeConfiguration";
-    private const string HasMaxLengthMethod = "HasMaxLength";
-
     public static ITypeSymbol? GetEntityTypeConfigurationBase(
         this ClassDeclarationSyntax classSyntax,
         SemanticModel semanticModel
@@ -17,7 +14,7 @@ internal static class CompilationExtensions
         return classSyntax
             .BaseList?.Types.Select(t => semanticModel.GetTypeInfo(t.Type).Type)
             .Where(t => t != null)
-            .FirstOrDefault(t => t!.Name.StartsWith(EntityTypeConfigurationInterface));
+            .FirstOrDefault(t => t!.Name.StartsWith(Constants.EntityTypeConfigurationInterface));
     }
 
     public static List<PropertyMaxLength> FindMaxLengthProperties(
@@ -29,7 +26,7 @@ internal static class CompilationExtensions
         var maxLengthInvocations = classSyntax
             .DescendantNodes()
             .OfType<InvocationExpressionSyntax>()
-            .Where(inv => inv.Expression.ToString().EndsWith(HasMaxLengthMethod));
+            .Where(inv => inv.Expression.ToString().EndsWith(Constants.HasMaxLengthMethod));
 
         foreach (var invocation in maxLengthInvocations)
         {
@@ -41,6 +38,15 @@ internal static class CompilationExtensions
 
         return maxLengthProperties;
     }
+
+    public static bool IsEntityConfigurationClass(this ClassDeclarationSyntax classNode) =>
+        classNode.BaseList?.Types.Any(t =>
+            t.Type.ToString().StartsWith(Constants.EntityTypeConfigurationInterface)
+        ) == true;
+
+    public static bool IsDbContextClass(this ClassDeclarationSyntax classNode) =>
+        classNode.BaseList?.Types.Any(t => t.Type.ToString().Contains(Constants.DbContextClass))
+        == true;
 
     private static bool TryGetPropertyMaxLength(
         InvocationExpressionSyntax invocation,

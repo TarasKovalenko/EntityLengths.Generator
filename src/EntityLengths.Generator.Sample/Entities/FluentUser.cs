@@ -11,7 +11,7 @@ public class FluentUser
     public required string Name { get; set; }
 }
 
-public class FluentUserConfiguration : IEntityTypeConfiguration<FluentUser>
+public class FluentConfigurationUser : IEntityTypeConfiguration<FluentUser>
 {
     public void Configure(EntityTypeBuilder<FluentUser> builder)
     {

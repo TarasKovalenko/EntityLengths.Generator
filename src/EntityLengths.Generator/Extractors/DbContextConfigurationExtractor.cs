@@ -22,7 +22,11 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
         var onModelCreating = classSyntax
             .Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(m =>
-                string.Equals(m.Identifier.Text, "OnModelCreating", StringComparison.Ordinal)
+                string.Equals(
+                    m.Identifier.Text,
+                    Constants.OnModelCreatingMethod,
+                    StringComparison.Ordinal
+                )
             );
 
         if (onModelCreating == null)
@@ -59,16 +63,18 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
     private static bool IsDbContextClass(ISymbol? classSymbol)
     {
         if (classSymbol is not ITypeSymbol typeSymbol)
+        {
             return false;
+        }
 
         var baseType = typeSymbol.BaseType;
         while (baseType != null)
         {
             if (
-                string.Equals(baseType.Name, "DbContext", StringComparison.Ordinal)
+                string.Equals(baseType.Name, Constants.DbContextClass, StringComparison.Ordinal)
                 && string.Equals(
                     baseType.ContainingNamespace.ToString(),
-                    "Microsoft.EntityFrameworkCore",
+                    Constants.EfNamespace,
                     StringComparison.Ordinal
                 )
             )
@@ -85,9 +91,15 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
     private static bool IsEntityCall(InvocationExpressionSyntax invocation)
     {
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+        {
             return false;
+        }
 
-        return string.Equals(memberAccess.Name.Identifier.Text, "Entity", StringComparison.Ordinal);
+        return string.Equals(
+            memberAccess.Name.Identifier.Text,
+            Constants.Entity,
+            StringComparison.Ordinal
+        );
     }
 
     private static bool TryGetEntityTypeAndConfigurations(
@@ -144,7 +156,7 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
             if (
                 !string.Equals(
                     memberAccess.Name.Identifier.Text,
-                    "Property",
+                    Constants.Property,
                     StringComparison.Ordinal
                 )
             )
@@ -178,7 +190,7 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
                             } nextInv
                         && string.Equals(
                             nextMember.Name.Identifier.Text,
-                            "HasMaxLength",
+                            Constants.HasMaxLengthMethod,
                             StringComparison.Ordinal
                         )
                     )

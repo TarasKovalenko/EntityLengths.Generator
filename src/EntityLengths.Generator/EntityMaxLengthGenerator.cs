@@ -1,6 +1,11 @@
 using System.Collections.Immutable;
+using System.Text;
+using EntityLengths.Generator.Configuration;
+using EntityLengths.Generator.Core;
+using EntityLengths.Generator.Extensions;
 using EntityLengths.Generator.Extractors;
 using EntityLengths.Generator.Models;
+using EntityLengths.Generator.Options;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -9,108 +14,123 @@ namespace EntityLengths.Generator;
 [Generator]
 public class EntityMaxLengthGenerator : IIncrementalGenerator
 {
+    private readonly EntityLengthsOptionsProvider _optionsProvider = new();
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Find entity type configuration classes
-        var providerConfigTypes = context
-            .SyntaxProvider.CreateSyntaxProvider(
-                predicate: (s, _) =>
-                    s is ClassDeclarationSyntax cds
-                    && cds.BaseList?.Types.Any(t =>
-                        t.Type.ToString().StartsWith("IEntityTypeConfiguration")
-                    ) == true,
-                transform: (syntaxContext, _) =>
-                    new FluentConfigurationExtractor().ExtractPropertyLengths(syntaxContext)
-            )
-            .Where(x => x != null);
+        var typeDeclarations = context.SyntaxProvider.CreateSyntaxProvider(
+            predicate: IsSyntaxTargetForGeneration,
+            transform: (syntaxContext, _) =>
+            {
+                var config = _optionsProvider.GetOptions(syntaxContext.SemanticModel.Compilation);
+                var filter = new NamespaceFilter(config.ScanningOptions);
 
-        // Find entity classes with string properties that have MaxLength attribute
-        var entityTypesWithAttributes = context
-            .SyntaxProvider.CreateSyntaxProvider(
-                predicate: (s, _) => s is ClassDeclarationSyntax,
-                transform: (syntaxContext, _) =>
-                    new AttributeExtractor().ExtractPropertyLengths(syntaxContext)
-            )
-            .Where(x => x != null);
+                // Skip if namespace doesn't match filters
+                if (!filter.ShouldProcessNode(syntaxContext.Node, syntaxContext.SemanticModel))
+                {
+                    return null;
+                }
 
-        // Find DbContext classes
-        var dbContextConfigurations = context
-            .SyntaxProvider.CreateSyntaxProvider(
-                predicate: (s, _) =>
-                    s is ClassDeclarationSyntax cds
-                    && cds.BaseList?.Types.Any(t => t.Type.ToString().Contains("DbContext"))
-                        == true,
-                transform: (syntaxContext, _) =>
-                    new DbContextConfigurationExtractor().ExtractPropertyLengths(syntaxContext)
-            )
-            .Where(x => x != null);
+                var classNode = (ClassDeclarationSyntax)syntaxContext.Node;
 
-        // Combine all configurations
-        var compilationAndConfigurations = context
-            .CompilationProvider.Combine(providerConfigTypes.Collect())
-            .Combine(entityTypesWithAttributes.Collect())
-            .Combine(dbContextConfigurations.Collect());
+                // Check for IEntityTypeConfiguration
+                if (classNode.IsEntityConfigurationClass())
+                {
+                    return new FluentConfigurationExtractor().ExtractPropertyLengths(syntaxContext);
+                }
+
+                // Check for DbContext
+                if (classNode.IsDbContextClass())
+                {
+                    return new DbContextConfigurationExtractor().ExtractPropertyLengths(
+                        syntaxContext
+                    );
+                }
+
+                // Check for attributes
+                return new AttributeExtractor().ExtractPropertyLengths(syntaxContext);
+            }
+        );
+
+        var compiledTypes = typeDeclarations.Where(t => t != null).Collect();
 
         context.RegisterSourceOutput(
-            compilationAndConfigurations,
-            static (spc, source) =>
-                GenerateEntityLengthsFile(
-                    spc,
-                    source.Left.Left.Left,
-                    source.Left.Left.Right,
-                    source.Left.Right,
-                    source.Right
-                )
+            context.CompilationProvider.Combine(compiledTypes),
+            (spc, source) => GenerateOutput(spc, source.Left, source.Right)
         );
     }
 
-    private static void GenerateEntityLengthsFile(
+    private static bool IsSyntaxTargetForGeneration(SyntaxNode node, CancellationToken _) =>
+        node is ClassDeclarationSyntax;
+
+    private void GenerateOutput(
         SourceProductionContext context,
         Compilation compilation,
-        ImmutableArray<EntityTypeInfo?> fluentConfigurations,
-        ImmutableArray<EntityTypeInfo?> attributeConfigurations,
-        ImmutableArray<EntityTypeInfo?> dbContextConfigurations
+        ImmutableArray<EntityTypeInfo?> types
     )
     {
-        var sourceBuilder = new System.Text.StringBuilder();
-        sourceBuilder.AppendLine("// <auto-generated/>");
-        sourceBuilder.AppendLine($"namespace {compilation.AssemblyName};");
-        sourceBuilder.AppendLine();
-        sourceBuilder.AppendLine("public static partial class EntityLengths \r\n{");
+        var options = _optionsProvider.GetOptions(compilation);
 
-        // Process all configurations
-        var allConfigurations = fluentConfigurations
-            .Concat(attributeConfigurations)
-            .Concat(dbContextConfigurations)
-            .Where(c => c != null)
-            .GroupBy(c => c!.EntityType.Name)
+        var sourceBuilder = new StringBuilder();
+        sourceBuilder.AppendLine("// <auto-generated/>");
+
+        var ns = options.Namespace ?? compilation.AssemblyName;
+        sourceBuilder.AppendLine($"namespace {ns};");
+        sourceBuilder.AppendLine();
+
+        if (options.GenerateDocumentation)
+        {
+            sourceBuilder.AppendLine("/// <summary>");
+            sourceBuilder.AppendLine(
+                "/// Contains generated string length constants for entity properties"
+            );
+            sourceBuilder.AppendLine("/// </summary>");
+        }
+
+        sourceBuilder.AppendLine(
+            $"public static partial class {options.GeneratedClassName} \r\n{{"
+        );
+
+        var entityGroups = types
+            .Where(t => t != null)
+            .GroupBy(t => t!.EntityType.Name)
+            .OrderBy(g => g.Key)
             .ToList();
 
         var isFirst = true;
-        foreach (var entityGroup in allConfigurations)
+        foreach (var entityGroup in entityGroups)
         {
             if (!isFirst)
                 sourceBuilder.AppendLine();
+
+            if (options.GenerateDocumentation)
+            {
+                sourceBuilder.AppendLine("\t/// <summary>");
+                sourceBuilder.AppendLine($"\t/// Length constants for {entityGroup.Key}");
+                sourceBuilder.AppendLine("\t/// </summary>");
+            }
 
             var allProperties = entityGroup
                 .SelectMany(c => c!.StringProperties)
                 .GroupBy(p => p.PropertyName)
                 .Select(g => g.First())
+                .OrderBy(p => p.PropertyName)
                 .ToList();
 
-            GenerateEntityClass(sourceBuilder, entityGroup.Key, allProperties);
+            GenerateEntityClass(sourceBuilder, entityGroup.Key, allProperties, options);
             isFirst = false;
         }
 
         sourceBuilder.AppendLine("}");
 
-        context.AddSource("EntityLengths.g.cs", sourceBuilder.ToString());
+        context.AddSource($"{options.GeneratedClassName}.g.cs", sourceBuilder.ToString());
     }
 
     private static void GenerateEntityClass(
-        System.Text.StringBuilder sourceBuilder,
+        StringBuilder sourceBuilder,
         string entityName,
-        List<PropertyMaxLength> properties
+        IReadOnlyCollection<PropertyMaxLength> properties,
+        EntityLengthsGeneratorOptions options
     )
     {
         sourceBuilder.AppendLine($"\tpublic static partial class {entityName}");
@@ -118,8 +138,15 @@ public class EntityMaxLengthGenerator : IIncrementalGenerator
 
         foreach (var prop in properties)
         {
+            if (options.GenerateDocumentation)
+            {
+                sourceBuilder.AppendLine("\t\t/// <summary>");
+                sourceBuilder.AppendLine($"\t\t/// Maximum length for {prop.PropertyName}");
+                sourceBuilder.AppendLine("\t\t/// </summary>");
+            }
+
             sourceBuilder.AppendLine(
-                $"\t\tpublic const int {prop.PropertyName}Length = {prop.MaxLength};"
+                $"\t\tpublic const int {prop.PropertyName}{options.LengthSuffix} = {prop.MaxLength};"
             );
         }
 
