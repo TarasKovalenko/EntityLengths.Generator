@@ -127,7 +127,7 @@ using EntityLengths.Generator.Configuration;
         IncludeNamespaces = new[] { ""MyApp.Domain"", ""MyApp.Core"" },
         ExcludeNamespaces = new[] { ""MyApp.Tests"" },
         ScanNestedNamespaces = false,
-        EntitySuffix = ""Entity""
+        ScanEntitySuffix = ""Entity""
     )]"
         );
 
