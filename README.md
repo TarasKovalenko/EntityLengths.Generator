@@ -2,6 +2,7 @@
 
 [![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://taraskovalenko.github.io/)
 [![build](https://github.com/TarasKovalenko/EntityLengths.Generator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/TarasKovalenko/EntityLengths.Generator/actions)
+[![EntityLengths.Generator NuGet current](https://img.shields.io/nuget/v/EntityLengths.Generator?label=EntityLengths.Generator)](https://img.shields.io/nuget/v/EntityLengths.Generator?label=EntityLengths.Generator)
 
 ## Goals
 This library is a C# source generator designed to automatically generate string length constants from Entity Framework configurations and data annotations. 
