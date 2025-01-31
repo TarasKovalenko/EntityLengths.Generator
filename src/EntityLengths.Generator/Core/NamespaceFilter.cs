@@ -1,4 +1,5 @@
-﻿using EntityLengths.Generator.Options;
+﻿using System.Linq;
+using EntityLengths.Generator.Options;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 

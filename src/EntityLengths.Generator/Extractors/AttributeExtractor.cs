@@ -1,4 +1,6 @@
-﻿using EntityLengths.Generator.Core;
+﻿using System.Collections.Generic;
+using System.Linq;
+using EntityLengths.Generator.Core;
 using EntityLengths.Generator.Extensions;
 using EntityLengths.Generator.Models;
 using Microsoft.CodeAnalysis;

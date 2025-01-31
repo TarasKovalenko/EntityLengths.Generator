@@ -2,60 +2,45 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <IsPackable>true</IsPackable>
-        <LangVersion>latest</LangVersion>
+        <LangVersion>default</LangVersion>
         <Nullable>enable</Nullable>
-        <ImplicitUsings>true</ImplicitUsings>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <RootNamespace>EntityLengths.Generator</RootNamespace>
+        <IncludeBuildOutput>true</IncludeBuildOutput>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    </PropertyGroup>
+    <PropertyGroup>
         <PackageId>EntityLengths.Generator</PackageId>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-
         <Description>
             A C# source generator that automatically generates string length constants from Entity Framework configurations and data annotations.
         </Description>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Authors>Taras Kovalenko</Authors>
         <Copyright>Copyright Taras Kovalenko</Copyright>
         <PackageTags>sourcegenerator;entityframework;stringlength;constants</PackageTags>
-
-        <!-- Source Generator Specific Settings -->
-        <IsRoslynComponent>true</IsRoslynComponent>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-
-        <!-- Licensing -->
+        <Product>EntityLengths.Generator</Product>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/tarasKovalenko/EntityLengths.Generator</PackageProjectUrl>
         <RepositoryUrl>https://github.com/TarasKovalenko/EntityLengths.Generator.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-
-        <!-- Source Control -->
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-
-        <!-- Symbols -->
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <SymbolPackageLicenseUrl>https://opensource.org/licenses/MIT</SymbolPackageLicenseUrl>
+        <NoPackageAnalysis>false</NoPackageAnalysis>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Update="NETStandard.Library" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll"
-              Pack="true"
-              PackagePath="analyzers/dotnet/cs"
-              Visible="false"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="docs\README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>

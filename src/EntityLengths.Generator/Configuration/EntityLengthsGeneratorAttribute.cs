@@ -1,4 +1,6 @@
-﻿namespace EntityLengths.Generator.Configuration;
+﻿using System;
+
+namespace EntityLengths.Generator.Configuration;
 
 [AttributeUsage(AttributeTargets.Assembly)]
 public class EntityLengthsGeneratorAttribute : Attribute

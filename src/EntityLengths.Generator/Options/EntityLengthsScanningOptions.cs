@@ -1,4 +1,6 @@
-﻿namespace EntityLengths.Generator.Options;
+﻿using System.Collections.Generic;
+
+namespace EntityLengths.Generator.Options;
 
 /// <summary>
 /// Scanning options for the EntityLengths generator.
