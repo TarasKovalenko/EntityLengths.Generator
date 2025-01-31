@@ -74,9 +74,9 @@ public class User
 }
 
 // Using Fluent API
-public class UserConfiguration : IEntityTypeConfiguration
+public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder builder)
+    public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.Property(p => p.Name)
             .HasMaxLength(50);
