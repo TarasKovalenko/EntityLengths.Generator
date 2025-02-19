@@ -2,9 +2,10 @@
 
 [![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://taraskovalenko.github.io/)
 [![build](https://github.com/TarasKovalenko/EntityLengths.Generator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/TarasKovalenko/EntityLengths.Generator/actions)
+[![EntityLengths.Generator NuGet current](https://img.shields.io/nuget/v/EntityLengths.Generator?label=EntityLengths.Generator)](https://www.nuget.org/packages/EntityLengths.Generator/)
 
 ## Goals
-This library is a C# source generator designed to automatically generate string length constants from Entity Framework configurations and data annotations. 
+This library is a C# source generator designed to automatically generate string length constants from Entity Framework configurations and data annotations.
 By analyzing your model configurations, it eliminates the need for manual constant maintenance and reduces the risk of hardcoded length values across your application.
 
 ## Terms of use
@@ -74,9 +75,9 @@ public class User
 }
 
 // Using Fluent API
-public class UserConfiguration : IEntityTypeConfiguration
+public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder builder)
+    public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.Property(p => p.Name)
             .HasMaxLength(50);
@@ -95,7 +96,14 @@ public class UserDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // fluent API style
         modelBuilder.Entity<User>().Property(b => b.Surname).HasMaxLength(150).IsRequired();
+
+        // or lambda API
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.Surname).HasMaxLength(150).IsRequired();
+        });
     }
 }
 ```
