@@ -20,7 +20,7 @@
         <PackageTags>sourcegenerator;entityframework;stringlength;constants</PackageTags>
         <Product>EntityLengths.Generator</Product>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageProjectUrl>https://github.com/tarasKovalenko/EntityLengths.Generator</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/TarasKovalenko/EntityLengths.Generator</PackageProjectUrl>
         <RepositoryUrl>https://github.com/TarasKovalenko/EntityLengths.Generator.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <NoPackageAnalysis>false</NoPackageAnalysis>
@@ -36,7 +36,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Update="NETStandard.Library" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="[4.8.0, 4.11.0]"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="[4.8.0, 4.12.0]"/>
     </ItemGroup>
 
     <ItemGroup>
