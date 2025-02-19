@@ -96,7 +96,14 @@ public class UserDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // fluent API style
         modelBuilder.Entity<User>().Property(b => b.Surname).HasMaxLength(150).IsRequired();
+
+        // or lambda API
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.Surname).HasMaxLength(150).IsRequired();
+        });
     }
 }
 ```
