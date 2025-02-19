@@ -14,7 +14,7 @@
         <Description>
             A C# source generator that automatically generates string length constants from Entity Framework configurations and data annotations.
         </Description>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <Authors>Taras Kovalenko</Authors>
         <Copyright>Copyright Taras Kovalenko</Copyright>
         <PackageTags>sourcegenerator;entityframework;stringlength;constants</PackageTags>

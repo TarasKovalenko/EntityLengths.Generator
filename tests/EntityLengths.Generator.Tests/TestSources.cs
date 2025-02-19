@@ -75,7 +75,31 @@ public class SampleDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>().Property(b => b.Name).HasMaxLength(50).IsRequired();
+        modelBuilder.Entity<User>().Property(b => b.Name).HasMaxLength(50).IsRequired();\
+    }
+}";
+
+    public const string DbContextLambdaEntity =
+        @"
+using Microsoft.EntityFrameworkCore;
+
+namespace TestNamespace;
+
+public class User
+{
+    public required string Name { get; set; }
+}
+
+public class SampleDbContext : DbContext
+{
+    public DbSet<User> Users { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.Name).HasMaxLength(50).IsRequired();
+        });
     }
 }";
 

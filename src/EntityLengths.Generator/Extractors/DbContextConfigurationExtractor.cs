@@ -50,6 +50,7 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
                 TryGetEntityTypeAndConfigurations(
                     entityCall,
                     semanticModel,
+                    onModelCreating,
                     out var entityType,
                     out var configs
                 )
@@ -108,6 +109,7 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
     private static bool TryGetEntityTypeAndConfigurations(
         InvocationExpressionSyntax entityCall,
         SemanticModel semanticModel,
+        MethodDeclarationSyntax methodDeclaration,
         out ITypeSymbol entityType,
         out List<PropertyMaxLength> configurations
     )
@@ -122,96 +124,181 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
             .FirstOrDefault()
             ?.Arguments.FirstOrDefault();
 
-        if (typeArgument == null)
+        if (typeArgument is null)
         {
             return false;
         }
 
         var typeInfo = semanticModel.GetTypeInfo(typeArgument);
-        if (typeInfo.Type == null)
+        if (typeInfo.Type is null)
         {
             return false;
         }
 
         entityType = typeInfo.Type;
 
-        // Get the chain of method calls after Entity<T>()
-        var chainedCalls = new List<InvocationExpressionSyntax>();
-        var current = entityCall.Parent;
-        while (current != null)
-        {
-            if (current is InvocationExpressionSyntax inv)
-            {
-                chainedCalls.Add(inv);
-            }
+        // Handle lambda style configuration
+        HandleLambdaConfiguration(entityCall, configurations);
 
-            current = current.Parent;
-        }
+        // Find all Property() configurations for this entity
+        HandleFluentConfiguration(semanticModel, methodDeclaration, entityType, configurations);
 
-        // Find Property() calls
-        foreach (var call in chainedCalls)
-        {
-            if (call.Expression is not MemberAccessExpressionSyntax memberAccess)
-            {
-                continue;
-            }
+        return configurations.Any();
+    }
 
-            if (
-                !string.Equals(
-                    memberAccess.Name.Identifier.Text,
+    private static void HandleFluentConfiguration(
+        SemanticModel semanticModel,
+        MethodDeclarationSyntax methodDeclaration,
+        ITypeSymbol entityType,
+        List<PropertyMaxLength> configurations
+    )
+    {
+        var allPropertyConfigs = methodDeclaration
+            .DescendantNodes()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(i =>
+                i.Expression is MemberAccessExpressionSyntax ma
+                && string.Equals(
+                    ma.Name.Identifier.Text,
                     Constants.Property,
-                    StringComparison.Ordinal
+                    StringComparison.OrdinalIgnoreCase
                 )
-            )
-            {
+            );
+
+        foreach (var propertyConfig in allPropertyConfigs)
+        {
+            // Check if this Property() belongs to our entity
+            var relatedEntity = FindRelatedEntityCall(propertyConfig);
+            if (relatedEntity is null)
                 continue;
-            }
 
-            if (
-                call.ArgumentList.Arguments.FirstOrDefault()?.Expression
-                is not LambdaExpressionSyntax lambda
-            )
-            {
+            var relatedTypeArgument = relatedEntity
+                .DescendantNodes()
+                .OfType<TypeArgumentListSyntax>()
+                .FirstOrDefault()
+                ?.Arguments.FirstOrDefault();
+
+            if (relatedTypeArgument is null)
                 continue;
-            }
 
-            // Get property name from lambda
-            var propertyAccess = lambda.Body as MemberAccessExpressionSyntax;
-            var propertyName = propertyAccess?.Name.Identifier.Text ?? string.Empty;
+            var relatedTypeInfo = semanticModel.GetTypeInfo(relatedTypeArgument);
+            if (relatedTypeInfo.Type is null)
+                continue;
 
-            if (!string.IsNullOrEmpty(propertyName))
+            if (SymbolEqualityComparer.Default.Equals(relatedTypeInfo.Type, entityType))
             {
-                // Look for HasMaxLength in the following chain
-                var nextInChain = call.Parent;
-                while (nextInChain != null)
-                {
-                    if (
-                        nextInChain
-                            is InvocationExpressionSyntax
-                            {
-                                Expression: MemberAccessExpressionSyntax nextMember
-                            } nextInv
-                        && string.Equals(
-                            nextMember.Name.Identifier.Text,
-                            Constants.HasMaxLengthMethod,
-                            StringComparison.Ordinal
-                        )
-                    )
+                ProcessPropertyConfiguration(propertyConfig, configurations);
+            }
+        }
+    }
+
+    private static void HandleLambdaConfiguration(
+        InvocationExpressionSyntax entityCall,
+        List<PropertyMaxLength> configurations
+    )
+    {
+        if (
+            entityCall.ArgumentList.Arguments.FirstOrDefault()?.Expression is LambdaExpressionSyntax
+            {
+                Body: BlockSyntax block
+            }
+        )
+        {
+            foreach (var statement in block.Statements)
+            {
+                if (
+                    statement is ExpressionStatementSyntax
                     {
-                        var lengthArg = nextInv.ArgumentList.Arguments.FirstOrDefault()?.ToString();
-                        if (int.TryParse(lengthArg, out var length))
-                        {
-                            configurations.Add(new PropertyMaxLength(propertyName, length));
-                        }
-
-                        break;
+                        Expression: InvocationExpressionSyntax invocation
                     }
-
-                    nextInChain = nextInChain.Parent;
+                )
+                {
+                    ProcessPropertyConfiguration(invocation, configurations);
                 }
             }
         }
+    }
 
-        return configurations.Any();
+    private static InvocationExpressionSyntax? FindRelatedEntityCall(
+        InvocationExpressionSyntax propertyCall
+    )
+    {
+        // First check ancestors (works for lambda style)
+        var ancestor = propertyCall
+            .Ancestors()
+            .OfType<InvocationExpressionSyntax>()
+            .FirstOrDefault(IsEntityCall);
+
+        if (ancestor != null)
+        {
+            return ancestor;
+        }
+
+        // For fluent style, look in the same expression statement
+        var statement = propertyCall
+            .Ancestors()
+            .OfType<ExpressionStatementSyntax>()
+            .FirstOrDefault();
+        if (statement is not null)
+        {
+            return statement
+                .DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+                .FirstOrDefault(IsEntityCall);
+        }
+
+        return null;
+    }
+
+    private static void ProcessPropertyConfiguration(
+        InvocationExpressionSyntax propertyCall,
+        List<PropertyMaxLength> configurations
+    )
+    {
+        if (
+            propertyCall.ArgumentList.Arguments.FirstOrDefault()?.Expression
+            is not LambdaExpressionSyntax lambda
+        )
+        {
+            return;
+        }
+
+        var propertyAccess = lambda.Body as MemberAccessExpressionSyntax;
+        var propertyName = propertyAccess?.Name.Identifier.Text ?? string.Empty;
+
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return;
+        }
+
+        var current = propertyCall;
+        while (current is not null)
+        {
+            if (
+                current.Parent
+                    is MemberAccessExpressionSyntax
+                    {
+                        Parent: InvocationExpressionSyntax parentInvocation
+                    } parentAccess
+                && string.Equals(
+                    parentAccess.Name.Identifier.Text,
+                    Constants.HasMaxLengthMethod,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                var lengthArg = parentInvocation
+                    .ArgumentList.Arguments.FirstOrDefault()
+                    ?.Expression.ToString();
+                if (int.TryParse(lengthArg, out var length))
+                {
+                    configurations.Add(new PropertyMaxLength(propertyName, length));
+                }
+
+                break;
+            }
+
+            current = current.Parent?.Parent as InvocationExpressionSyntax;
+        }
     }
 }

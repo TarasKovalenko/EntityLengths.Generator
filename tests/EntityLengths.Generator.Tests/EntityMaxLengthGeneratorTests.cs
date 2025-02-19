@@ -151,6 +151,23 @@ public class EntityMaxLengthGeneratorTests
     }
 
     [Fact]
+    public void Generate_EntityLength_With_DbContextLambda()
+    {
+        // Arrange
+        var compilation = CompilationBuilder.CreateCompilation(
+            TestSources.DbContextLambdaEntity,
+            includeDataAnnotations: true,
+            includeEntityFrameworkCore: true
+        );
+
+        // Act
+        var result = _driver.RunGenerators(compilation).GetRunResult();
+
+        // Assert
+        GeneratorTestHelper.AssertGeneratedOutput(result, TestSources.ExpectedOutput);
+    }
+
+    [Fact]
     public void Generate_EntityLength_With_DataAnnotations_StringLength()
     {
         // Arrange

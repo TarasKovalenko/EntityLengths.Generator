@@ -14,11 +14,19 @@ using EntityLengths.Generator.Sample;
 
 Console.WriteLine(Constants.FluentUser.NameLength);
 
+Console.WriteLine(Constants.FluentUser.DescriptionLength);
+
 Console.WriteLine(Constants.DataAnnotationUser.NameLength);
 
 Console.WriteLine(Constants.DataAnnotationUser.SurnameLength);
 
 Console.WriteLine(Constants.DbContextUser.NameLength);
+
+Console.WriteLine(Constants.DbContextUser.DescriptionLength);
+
+Console.WriteLine(Constants.DbContextUser.Name2Length);
+
+Console.WriteLine(Constants.DbContextUser.Description2Length);
 
 Console.WriteLine(Constants.ColumnTypeDefinitionUser.NameLength);
 
