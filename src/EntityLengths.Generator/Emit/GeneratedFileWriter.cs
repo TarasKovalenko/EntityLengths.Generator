@@ -39,7 +39,9 @@ internal static class GeneratedFileWriter
                 return true;
             }
 
-            var temporaryPath = path + ".tmp";
+            // Unique per write: a multi-targeted project runs one inner build per target framework in
+            // parallel, and they all write the same output path.
+            var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
             File.WriteAllText(temporaryPath, content, Utf8NoBom);
             File.Copy(temporaryPath, path, overwrite: true);
             File.Delete(temporaryPath);

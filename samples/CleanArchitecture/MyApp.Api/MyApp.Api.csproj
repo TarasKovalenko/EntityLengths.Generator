@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>$(SupportedTargetFrameworks)</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MyApp.Api</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The composition root: Domain for the constants, Infrastructure for the DbContext. -->
+        <ProjectReference Include="..\MyApp.Domain\MyApp.Domain.csproj"/>
+        <ProjectReference Include="..\MyApp.Infrastructure\MyApp.Infrastructure.csproj"/>
+    </ItemGroup>
+
+</Project>

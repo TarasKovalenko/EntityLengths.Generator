@@ -1,0 +1,11 @@
+<Project>
+
+    <PropertyGroup>
+        <!--
+          Target frameworks supported by the samples and exercised by the tests. The generator itself
+          stays on netstandard2.0, which is what Roslyn loads analyzers from.
+        -->
+        <SupportedTargetFrameworks>net8.0;net9.0;net10.0</SupportedTargetFrameworks>
+    </PropertyGroup>
+
+</Project>

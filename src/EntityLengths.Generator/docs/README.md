@@ -43,6 +43,12 @@ To learn more about the war and how you can help, [click here](https://war.ukrai
 - Can write the constants into another project, for Clean Architecture and similar layouts
   (see [Writing the constants into another project](#writing-the-constants-into-another-project-clean-architecture))
 
+## Supported frameworks
+
+The generator ships as a `netstandard2.0` analyzer, which is what Roslyn loads, and works in projects
+targeting **.NET 8, .NET 9 and .NET 10**. Tests and samples are built and run against all three, each
+with the matching EF Core line (8.0.x, 9.0.x, 10.0.x).
+
 ## Installation
 
 Install the library via NuGet Package Manager:
@@ -185,6 +191,8 @@ Notes:
 
 - The file is written during compilation, so `Domain` picks up changes on the **next** build. Commit
   the generated file and treat it as checked-in generated code.
+- A runnable end-to-end example is in
+  [`samples/CleanArchitecture`](samples/CleanArchitecture/README.md) (Domain / Infrastructure / Api).
 - The file is only touched when its content actually changes, so editing in an IDE does not churn it.
 - Fluent API and `OnModelCreating` lengths are read from source, so the generator must run in the
   project that contains those configurations - it cannot read them from a referenced assembly.
