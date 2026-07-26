@@ -6,7 +6,12 @@
         <Nullable>enable</Nullable>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IncludeBuildOutput>true</IncludeBuildOutput>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <!--
+          No GeneratePackageOnBuild: it makes "dotnet pack" skip the build, so packing a configuration
+          that has not been built yet fails with NU5026 instead of building it. Run
+          "dotnet pack -c Release" to produce the package.
+        -->
+        <IsPackable>true</IsPackable>
     </PropertyGroup>
     <PropertyGroup>
         <PackageId>EntityLengths.Generator</PackageId>
@@ -27,11 +32,27 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
         <!-- Makes the EntityLengths* MSBuild properties visible to the generator in consuming projects. -->
         <None Include="build\EntityLengths.Generator.targets" Pack="true" PackagePath="build\$(PackageId).targets"/>
         <None Include="build\EntityLengths.Generator.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets"/>
     </ItemGroup>
+
+    <!--
+      Packs the analyzer from $(TargetPath) inside the pack pipeline, which runs after the build and
+      resolves the right configuration and target framework. Pointing a None item at $(OutputPath)
+      instead depends on that path already holding a build.
+    -->
+    <PropertyGroup>
+        <TargetsForTfmSpecificContentInPackage>
+            $(TargetsForTfmSpecificContentInPackage);PackAnalyzerAssembly
+        </TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <Target Name="PackAnalyzerAssembly">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="analyzers/dotnet/cs"/>
+        </ItemGroup>
+    </Target>
 
     <ItemGroup>
         <!-- Versions come from Directory.Packages.props (central package management). -->

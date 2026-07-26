@@ -320,7 +320,11 @@ public static partial class Constants
 ```bash
 dotnet build          # generator, tests and both samples, for net8.0 / net9.0 / net10.0
 dotnet test
+dotnet pack src/EntityLengths.Generator -c Release -o artifacts
 ```
+
+Packing is explicit: the project does not set `GeneratePackageOnBuild`, because that makes
+`dotnet pack` skip the build and fail with `NU5026` when the configuration has not been built yet.
 
 Package versions are managed centrally in `Directory.Packages.props`, so a `PackageReference` in a
 project file must not carry a `Version` attribute. The target frameworks come from
