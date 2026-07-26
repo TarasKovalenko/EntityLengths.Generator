@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using EntityLengths.Generator.Tests.Infrastructure;
 using Microsoft.CodeAnalysis;
 using Xunit;
@@ -211,6 +212,32 @@ public class User
             result.Diagnostics,
             d => d.Severity == DiagnosticSeverity.Warning && d.Id == "ELG0001"
         );
+    }
+
+    [Fact]
+    public void Concurrent_Writes_To_The_Same_Path_Succeed()
+    {
+        // What a multi-targeted project does: one inner build per target framework, in parallel, all
+        // writing the same output file.
+        var results = new GeneratorDriverRunResult[8];
+
+        Parallel.For(
+            0,
+            results.Length,
+            i =>
+                results[i] = TestDriver.Run(
+                    TestCompilation.Create(EntityWithLength(50)),
+                    new Dictionary<string, string>
+                    {
+                        ["build_property.EntityLengthsResolvedOutputPath"] = OutputPath,
+                        ["build_property.EntityLengthsOutputNamespace"] = "MyApp.Domain",
+                    }
+                )
+        );
+
+        Assert.All(results, result => Assert.Empty(result.Diagnostics));
+        Assert.Contains("NameLength = 50", File.ReadAllText(OutputPath));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(OutputPath)!, "*.tmp"));
     }
 
     private GeneratorDriverRunResult Run(Dictionary<string, string> properties) =>

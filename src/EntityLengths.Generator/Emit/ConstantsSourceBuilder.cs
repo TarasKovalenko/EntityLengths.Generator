@@ -31,9 +31,10 @@ internal static class ConstantsSourceBuilder
             sourceBuilder.AppendLine("/// </summary>");
         }
 
-        sourceBuilder.AppendLine(
-            $"public static partial class {options.GeneratedClassName} \r\n{{"
-        );
+        // One AppendLine per line: an embedded "\r\n" here would mix line endings inside the file,
+        // which shows up as a permanently modified file once it is committed.
+        sourceBuilder.AppendLine($"public static partial class {options.GeneratedClassName} ");
+        sourceBuilder.AppendLine("{");
 
         var isFirst = true;
         foreach (var entity in entities)

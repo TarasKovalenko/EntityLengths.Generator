@@ -189,6 +189,81 @@ public class Helper
         Assert.DoesNotContain("Helper", output);
     }
 
+    [Fact]
+    public void Generates_The_Output_Documented_In_The_Readme()
+    {
+        const string source =
+            @"
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace TestNamespace;
+
+public class User
+{
+    [MaxLength(50)]
+    public required string Name { get; set; }
+
+    [StringLength(150)]
+    public required string Surname { get; set; }
+
+    [Column(TypeName = ""varchar(200)"")]
+    public required string Url { get; set; }
+
+    public required string Description { get; set; }
+
+    public required string Code { get; set; }
+}
+
+public class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.Property(p => p.Description).HasMaxLength(500);
+    }
+}
+
+public class UserDbContext : DbContext
+{
+    public DbSet<User> Users { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<User>().Property(b => b.Code).HasMaxLength(20).IsRequired();
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
+        });
+    }
+}";
+
+        var result = TestDriver.Run(TestCompilation.Create(source));
+        var output = result
+            .GeneratedTrees.Single(t => t.FilePath.EndsWith("EntityLengths.g.cs"))
+            .GetText()
+            .ToString();
+
+        // Keeps the README example honest, including the alphabetical ordering it claims.
+        const string expected =
+            "public static partial class EntityLengths \r\n"
+            + "{\r\n"
+            + "\tpublic static partial class User\r\n"
+            + "\t{\r\n"
+            + "\t\tpublic const int CodeLength = 20;\r\n"
+            + "\t\tpublic const int DescriptionLength = 500;\r\n"
+            + "\t\tpublic const int NameLength = 50;\r\n"
+            + "\t\tpublic const int SurnameLength = 150;\r\n"
+            + "\t\tpublic const int UrlLength = 200;\r\n"
+            + "\t}\r\n"
+            + "}\r\n";
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains(expected.ReplaceLineEndings(), output.ReplaceLineEndings());
+    }
+
     private static string GetGeneratedSource(string source)
     {
         var result = TestDriver.Run(TestCompilation.Create(source));
