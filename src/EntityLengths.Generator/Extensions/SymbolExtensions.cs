@@ -7,6 +7,14 @@ namespace EntityLengths.Generator.Extensions;
 
 internal static class SymbolExtensions
 {
+    /// <summary>
+    /// Namespace of the symbol, or an empty string for the global namespace.
+    /// </summary>
+    public static string GetNamespaceName(this ISymbol symbol) =>
+        symbol.ContainingNamespace is null or { IsGlobalNamespace: true }
+            ? string.Empty
+            : symbol.ContainingNamespace.ToDisplayString();
+
     public static bool TryGetMaxLengthFromAttribute(
         this IPropertySymbol property,
         out int maxLength

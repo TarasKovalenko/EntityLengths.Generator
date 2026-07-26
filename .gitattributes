@@ -1,0 +1,12 @@
+# Normalize line endings so files written by the generator and committed to a repository
+# (see EntityLengthsOutputPath) do not show up as modified on a different platform.
+* text=auto
+
+*.cs text eol=lf
+*.csproj text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.sln text eol=crlf

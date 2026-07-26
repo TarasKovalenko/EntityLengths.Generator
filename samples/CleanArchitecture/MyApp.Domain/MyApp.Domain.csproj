@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(SupportedTargetFrameworks)</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MyApp.Domain</RootNamespace>
+    </PropertyGroup>
+
+    <!--
+      No reference to EF Core, to Infrastructure, or to the generator. Generated/EntityLengths.cs is a
+      checked-in file written by the generator while MyApp.Infrastructure builds, and compiled here
+      like any other source file.
+    -->
+
+</Project>

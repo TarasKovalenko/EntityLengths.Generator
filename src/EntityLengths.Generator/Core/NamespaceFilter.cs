@@ -1,30 +1,18 @@
-﻿using System.Linq;
+using System;
+using System.Linq;
 using EntityLengths.Generator.Options;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace EntityLengths.Generator.Core;
 
 internal class NamespaceFilter(EntityLengthsScanningOptions options)
 {
-    public bool ShouldProcessNode(SyntaxNode node, SemanticModel semanticModel)
+    /// <summary>
+    /// Decides whether the type that declared the lengths passes the configured namespace and suffix
+    /// filters. Applied after extraction so the syntax transform stays independent of the options.
+    /// </summary>
+    public bool ShouldInclude(string declaringNamespace, string declaringTypeName)
     {
-        if (node is not ClassDeclarationSyntax classDeclaration)
-        {
-            return false;
-        }
-
-        // Get containing namespace
-        var symbol = semanticModel.GetDeclaredSymbol(classDeclaration);
-        if (symbol == null)
-        {
-            return false;
-        }
-
-        var namespaceName = symbol.ContainingNamespace.ToString();
-
-        // Check if we should process this namespace
-        if (!ShouldProcessNamespace(namespaceName))
+        if (!ShouldProcessNamespace(declaringNamespace))
         {
             return false;
         }
@@ -32,7 +20,7 @@ internal class NamespaceFilter(EntityLengthsScanningOptions options)
         // Check entity suffix if configured
         if (!string.IsNullOrEmpty(options.EntitySuffix))
         {
-            return classDeclaration.Identifier.Text.EndsWith(options.EntitySuffix);
+            return declaringTypeName.EndsWith(options.EntitySuffix, StringComparison.Ordinal);
         }
 
         return true;

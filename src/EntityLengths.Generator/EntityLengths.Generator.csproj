@@ -14,7 +14,7 @@
         <Description>
             A C# source generator that automatically generates string length constants from Entity Framework configurations and data annotations.
         </Description>
-        <Version>1.0.3</Version>
+        <Version>1.1.0</Version>
         <Authors>Taras Kovalenko</Authors>
         <Copyright>Copyright Taras Kovalenko</Copyright>
         <PackageTags>sourcegenerator;entityframework;stringlength;constants</PackageTags>
@@ -28,15 +28,19 @@
 
     <ItemGroup>
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <!-- Makes the EntityLengths* MSBuild properties visible to the generator in consuming projects. -->
+        <None Include="build\EntityLengths.Generator.targets" Pack="true" PackagePath="build\$(PackageId).targets"/>
+        <None Include="build\EntityLengths.Generator.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+        <!-- Versions come from Directory.Packages.props (central package management). -->
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Update="NETStandard.Library" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="[4.8.0, 4.12.0]"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -45,6 +49,11 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="EntityLengths.Generator.Tests"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Analyzer release tracking for the ELG* diagnostics. -->
+        <AdditionalFiles Include="AnalyzerReleases.Unshipped.md"/>
     </ItemGroup>
 
 </Project>

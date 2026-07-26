@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>$(SupportedTargetFrameworks)</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>MyApp.Infrastructure</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <!--
+          This is the whole feature: the EF configurations live here, but the constants belong in the
+          Domain layer, which must not reference Infrastructure. The generator writes them there.
+        -->
+        <EntityLengthsOutputPath>../MyApp.Domain/Generated/EntityLengths.cs</EntityLengthsOutputPath>
+        <EntityLengthsOutputNamespace>MyApp.Domain</EntityLengthsOutputNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MyApp.Domain\MyApp.Domain.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Version comes from Directory.Packages.props and follows the target framework. -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!--
+          In a real project this is a single PackageReference:
+              <PackageReference Include="EntityLengths.Generator" PrivateAssets="all"/>
+          The sample uses a ProjectReference so it always builds against the local generator.
+        -->
+        <ProjectReference Include="..\..\..\src\EntityLengths.Generator\EntityLengths.Generator.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"/>
+    </ItemGroup>
+
+    <!--
+      The NuGet package imports this automatically. A ProjectReference does not carry build/*.targets,
+      so the sample imports it by hand to make the EntityLengths* properties compiler visible.
+    -->
+    <Import Project="..\..\..\src\EntityLengths.Generator\build\EntityLengths.Generator.targets"/>
+
+</Project>
