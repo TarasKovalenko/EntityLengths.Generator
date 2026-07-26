@@ -30,3 +30,16 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+    - name: Pack
+      run: dotnet pack src/EntityLengths.Generator -c Release -o artifacts
+    - name: Check the package declares no dependencies
+      # An analyzer package must not put Roslyn (or anything else) in its dependency graph: it would
+      # force its version range onto every consumer and break restores that pull Roslyn in through
+      # another package, such as Microsoft.EntityFrameworkCore.Design (NU1107 / NU1608).
+      run: |
+        unzip -p artifacts/*.nupkg '*.nuspec' > package.nuspec
+        if grep -q '<dependency ' package.nuspec; then
+          echo "The package must not declare dependencies, found:"
+          grep '<dependency ' package.nuspec
+          exit 1
+        fi

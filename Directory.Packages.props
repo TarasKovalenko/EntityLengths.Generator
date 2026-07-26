@@ -6,10 +6,12 @@
 
     <ItemGroup>
         <!--
-          The generator itself targets netstandard2.0 and must keep a low Roslyn floor: the referenced
-          version is the minimum compiler a consuming project needs.
+          The generator itself targets netstandard2.0 and must keep a low Roslyn floor: this version is
+          the minimum compiler a consuming project needs. No upper bound - the reference is private, so
+          it never reaches consumers, and capping it only ever broke restores that pulled in a newer
+          Roslyn through another package.
         -->
-        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="[4.8.0, 4.12.0]"/>
+        <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0"/>
         <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0"/>
     </ItemGroup>
 

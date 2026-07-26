@@ -12,6 +12,12 @@
     <ItemGroup>
         <!-- Versions come from Directory.Packages.props; EF Core follows the target framework. -->
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+        <!--
+          Referenced directly, and deliberately at the same version the generator compiles against: the
+          generator keeps Roslyn private so it never reaches consumers, and running the tests on that
+          floor is what proves the declared minimum actually works.
+        -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">

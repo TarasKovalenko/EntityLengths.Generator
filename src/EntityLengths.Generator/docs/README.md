@@ -65,6 +65,22 @@ Install the library via NuGet Package Manager:
 dotnet add package EntityLengths.Generator
 ```
 
+Version 1.1.0 and earlier declared `Microsoft.CodeAnalysis.CSharp [4.8.0, 4.12.0]` as a package
+dependency, which clashes with anything else that pulls in a newer Roslyn - for example
+`Microsoft.EntityFrameworkCore.Design` 10.x, which requires 5.0.0 or newer:
+
+```
+error NU1107: Version conflict detected for Microsoft.CodeAnalysis.CSharp
+```
+
+From 1.1.1 the package declares no dependencies at all, because the compiler already supplies Roslyn
+to analyzers. Upgrade to fix the restore. If you are stuck on an older version, reference Roslyn
+directly as the error suggests:
+
+```xml
+<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all"/>
+```
+
 ## Usage
 
 The generator supports a few ways to define string lengths, and combines everything it finds for one

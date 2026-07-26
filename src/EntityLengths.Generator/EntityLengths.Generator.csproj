@@ -14,7 +14,7 @@
         <Description>
             A C# source generator that automatically generates string length constants from Entity Framework configurations and data annotations.
         </Description>
-        <Version>1.1.0</Version>
+        <Version>1.1.1</Version>
         <Authors>Taras Kovalenko</Authors>
         <Copyright>Copyright Taras Kovalenko</Copyright>
         <PackageTags>sourcegenerator;entityframework;stringlength;constants</PackageTags>
@@ -40,7 +40,15 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Update="NETStandard.Library" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <!--
+          PrivateAssets="all" keeps Roslyn out of the package dependencies. Without it the package
+          forces its own Microsoft.CodeAnalysis.CSharp range onto every consumer, which collides with
+          anything else that pulls Roslyn in - Microsoft.EntityFrameworkCore.Design, for example -
+          and fails the restore with NU1107. The compiler already provides Roslyn to analyzers.
+        -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"
+                          PrivateAssets="all"
+                          ExcludeAssets="runtime"/>
     </ItemGroup>
 
     <ItemGroup>
