@@ -5,7 +5,7 @@
 [![EntityLengths.Generator NuGet current](https://img.shields.io/nuget/v/EntityLengths.Generator?label=EntityLengths.Generator)](https://www.nuget.org/packages/EntityLengths.Generator/)
 
 ## Goals
-This library is a C# source generator designed to automatically generate string length constants from Entity Framework configurations and data annotations.
+This library is a C# source generator designed to automatically generate string length constants from Entity Framework configurations and data annotations. 
 By analyzing your model configurations, it eliminates the need for manual constant maintenance and reduces the risk of hardcoded length values across your application.
 
 ## Terms of use
@@ -39,6 +39,9 @@ To learn more about the war and how you can help, [click here](https://war.ukrai
       - `[Column(TypeName = "nvarchar(200)")]`
       - `[Column(TypeName = "char(200)")]`
     - DbContext configurations (`OnModelCreating`)
+- Works on `class` and `record` entities
+- Can write the constants into another project, for Clean Architecture and similar layouts
+  (see [Writing the constants into another project](#writing-the-constants-into-another-project-clean-architecture))
 
 ## Installation
 
@@ -149,6 +152,51 @@ There are ways to configure EntityLengths.Generator. Configuration values are ne
 - `ScanNestedNamespaces` - Scans nested namespaces for entities. Default is `true`.
 - `ScanEntitySuffix` - The suffix for the entity classes to scan. Default is `null`.
 - `Namespace` - The namespace for the generated class. Default is `null`.
+
+### Writing the constants into another project (Clean Architecture)
+
+A source generator can only add code to the project it runs in. When the EF configurations live in
+`Infrastructure` but the constants belong in `Domain` (which must not reference `Infrastructure`),
+the generator can additionally write the constants to a file in that other project. The file is a
+normal source file: commit it, and the other project compiles it like any other code.
+
+Configure it with MSBuild properties in the project that contains the EF configurations:
+
+```xml
+<!-- MyApp.Infrastructure.csproj -->
+<PropertyGroup>
+    <!-- Relative to this project directory, or an absolute path -->
+    <EntityLengthsOutputPath>../MyApp.Domain/Generated/EntityLengths.cs</EntityLengthsOutputPath>
+    <!-- Namespace of the project that compiles the file -->
+    <EntityLengthsOutputNamespace>MyApp.Domain</EntityLengthsOutputNamespace>
+</PropertyGroup>
+```
+
+- `EntityLengthsOutputPath` - File the constants are written to. Relative paths resolve against the
+  project directory. Default is empty, meaning nothing is written to disk.
+- `EntityLengthsOutputNamespace` - Namespace used in the written file. Falls back to the
+  `Namespace` attribute value and then to the assembly name (reported as `ELG0002`).
+- `EntityLengthsEmitInProjectOutput` - Whether the constants are also compiled into the current
+  project. Default is `true`, and `false` as soon as `EntityLengthsOutputPath` is set, because
+  otherwise the same type would exist in both assemblies. Set it to `true` explicitly if the two
+  namespaces differ and you want both.
+
+Notes:
+
+- The file is written during compilation, so `Domain` picks up changes on the **next** build. Commit
+  the generated file and treat it as checked-in generated code.
+- The file is only touched when its content actually changes, so editing in an IDE does not churn it.
+- Fluent API and `OnModelCreating` lengths are read from source, so the generator must run in the
+  project that contains those configurations - it cannot read them from a referenced assembly.
+
+### Diagnostics
+
+| ID | Severity | Meaning |
+|----|----------|---------|
+| `ELG0001` | Warning | The constants file could not be written to `EntityLengthsOutputPath` |
+| `ELG0002` | Warning | `EntityLengthsOutputPath` is set without a namespace, so the assembly name is used |
+| `ELG0003` | Warning | Two entity types share a simple name, so their constants are merged into one nested class |
+| `ELG0004` | Warning | A property has conflicting configured lengths; the first one found is used |
 
 Generated output:
 

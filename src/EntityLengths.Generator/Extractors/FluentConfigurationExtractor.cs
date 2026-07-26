@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using EntityLengths.Generator.Core;
 using EntityLengths.Generator.Extensions;
 using EntityLengths.Generator.Models;
@@ -9,27 +9,28 @@ namespace EntityLengths.Generator.Extractors;
 
 internal class FluentConfigurationExtractor : IPropertyLengthExtractor
 {
-    public EntityTypeInfo? ExtractPropertyLengths(GeneratorSyntaxContext context)
+    public EquatableArray<EntityTypeInfo> ExtractPropertyLengths(GeneratorSyntaxContext context)
     {
-        var classSyntax = (ClassDeclarationSyntax)context.Node;
+        var typeSyntax = (TypeDeclarationSyntax)context.Node;
         var semanticModel = context.SemanticModel;
 
-        var baseType = classSyntax.GetEntityTypeConfigurationBase(semanticModel);
+        var baseType = typeSyntax.GetEntityTypeConfigurationBase(semanticModel);
         if (baseType is null)
         {
-            return null;
+            return EquatableArray<EntityTypeInfo>.Empty;
         }
 
         var entityType = (baseType as INamedTypeSymbol)?.TypeArguments.FirstOrDefault();
         if (entityType is null)
         {
-            return null;
+            return EquatableArray<EntityTypeInfo>.Empty;
         }
 
-        var maxLengthProperties = classSyntax.FindMaxLengthProperties();
-
-        return maxLengthProperties.Any()
-            ? new EntityTypeInfo(entityType, maxLengthProperties)
-            : null;
+        return EntityTypeInfoFactory.Create(
+            entityType,
+            typeSyntax,
+            semanticModel,
+            typeSyntax.FindMaxLengthProperties()
+        );
     }
 }

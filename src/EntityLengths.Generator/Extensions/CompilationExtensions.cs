@@ -9,7 +9,7 @@ namespace EntityLengths.Generator.Extensions;
 internal static class CompilationExtensions
 {
     public static ITypeSymbol? GetEntityTypeConfigurationBase(
-        this ClassDeclarationSyntax classSyntax,
+        this TypeDeclarationSyntax classSyntax,
         SemanticModel semanticModel
     )
     {
@@ -20,7 +20,7 @@ internal static class CompilationExtensions
     }
 
     public static List<PropertyMaxLength> FindMaxLengthProperties(
-        this ClassDeclarationSyntax classSyntax
+        this TypeDeclarationSyntax classSyntax
     )
     {
         var maxLengthProperties = new List<PropertyMaxLength>();
@@ -41,12 +41,12 @@ internal static class CompilationExtensions
         return maxLengthProperties;
     }
 
-    public static bool IsEntityConfigurationClass(this ClassDeclarationSyntax classNode) =>
+    public static bool IsEntityConfigurationClass(this TypeDeclarationSyntax classNode) =>
         classNode.BaseList?.Types.Any(t =>
             t.Type.ToString().StartsWith(Constants.EntityTypeConfigurationInterface)
         ) == true;
 
-    public static bool IsDbContextClass(this ClassDeclarationSyntax classNode) =>
+    public static bool IsDbContextClass(this TypeDeclarationSyntax classNode) =>
         classNode.BaseList?.Types.Any(t => t.Type.ToString().Contains(Constants.DbContextClass))
         == true;
 

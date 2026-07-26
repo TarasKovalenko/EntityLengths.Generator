@@ -1,0 +1,18 @@
+<Project>
+
+    <!--
+      Makes the EntityLengths MSBuild properties visible to the generator.
+      Imported at the end of the project file, so properties set anywhere in the .csproj are seen.
+    -->
+    <PropertyGroup>
+        <!-- Resolve the user supplied path against the project directory; absolute paths are kept. -->
+        <EntityLengthsResolvedOutputPath Condition="'$(EntityLengthsOutputPath)' != ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(EntityLengthsOutputPath)'))</EntityLengthsResolvedOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="EntityLengthsResolvedOutputPath"/>
+        <CompilerVisibleProperty Include="EntityLengthsOutputNamespace"/>
+        <CompilerVisibleProperty Include="EntityLengthsEmitInProjectOutput"/>
+    </ItemGroup>
+
+</Project>

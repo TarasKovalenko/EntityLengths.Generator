@@ -1,25 +1,24 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using EntityLengths.Generator.Core;
 using EntityLengths.Generator.Extensions;
 using EntityLengths.Generator.Models;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace EntityLengths.Generator.Extractors;
 
 internal class AttributeExtractor : IPropertyLengthExtractor
 {
-    public EntityTypeInfo? ExtractPropertyLengths(GeneratorSyntaxContext context)
+    public EquatableArray<EntityTypeInfo> ExtractPropertyLengths(GeneratorSyntaxContext context)
     {
-        var classSyntax = (ClassDeclarationSyntax)context.Node;
+        var typeSyntax = (TypeDeclarationSyntax)context.Node;
         var semanticModel = context.SemanticModel;
-        var classSymbol = semanticModel.GetDeclaredSymbol(classSyntax);
+        var classSymbol = semanticModel.GetDeclaredSymbol(typeSyntax) as INamedTypeSymbol;
 
         if (classSymbol is null)
         {
-            return null;
+            return EquatableArray<EntityTypeInfo>.Empty;
         }
 
         var stringPropertiesWithMaxLength = new List<PropertyMaxLength>();
@@ -40,6 +39,7 @@ internal class AttributeExtractor : IPropertyLengthExtractor
             if (member.TryGetMaxLengthFromColumnType(out maxLength))
             {
                 stringPropertiesWithMaxLength.Add(new PropertyMaxLength(member.Name, maxLength));
+                continue;
             }
 
             if (member.TryGetStringLengthFromAttribute(out maxLength))
@@ -48,8 +48,11 @@ internal class AttributeExtractor : IPropertyLengthExtractor
             }
         }
 
-        return stringPropertiesWithMaxLength.Any()
-            ? new EntityTypeInfo(classSymbol, stringPropertiesWithMaxLength)
-            : null;
+        return EntityTypeInfoFactory.Create(
+            classSymbol,
+            typeSyntax,
+            semanticModel,
+            stringPropertiesWithMaxLength
+        );
     }
 }

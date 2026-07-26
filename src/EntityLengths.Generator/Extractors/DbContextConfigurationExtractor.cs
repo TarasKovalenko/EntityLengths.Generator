@@ -10,19 +10,19 @@ namespace EntityLengths.Generator.Extractors;
 
 internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
 {
-    public EntityTypeInfo? ExtractPropertyLengths(GeneratorSyntaxContext context)
+    public EquatableArray<EntityTypeInfo> ExtractPropertyLengths(GeneratorSyntaxContext context)
     {
-        var classSyntax = (ClassDeclarationSyntax)context.Node;
+        var typeSyntax = (TypeDeclarationSyntax)context.Node;
         var semanticModel = context.SemanticModel;
-        var classSymbol = semanticModel.GetDeclaredSymbol(classSyntax);
+        var classSymbol = semanticModel.GetDeclaredSymbol(typeSyntax);
 
         if (!IsDbContextClass(classSymbol))
         {
-            return null;
+            return EquatableArray<EntityTypeInfo>.Empty;
         }
 
         // Find OnModelCreating method
-        var onModelCreating = classSyntax
+        var onModelCreating = typeSyntax
             .Members.OfType<MethodDeclarationSyntax>()
             .FirstOrDefault(m =>
                 string.Equals(
@@ -34,7 +34,7 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
 
         if (onModelCreating == null)
         {
-            return null;
+            return EquatableArray<EntityTypeInfo>.Empty;
         }
 
         // Find Entity<T> calls and their subsequent configurations
@@ -44,10 +44,16 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
             .Where(IsEntityCall)
             .ToList();
 
+        // A DbContext normally configures every entity, so all of them are collected instead of
+        // stopping at the first one.
+        var entities =
+            new List<KeyValuePair<ITypeSymbol, IReadOnlyCollection<PropertyMaxLength>>>();
+        var seenEntityTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+
         foreach (var entityCall in entityCalls)
         {
             if (
-                TryGetEntityTypeAndConfigurations(
+                !TryGetEntityTypeAndConfigurations(
                     entityCall,
                     semanticModel,
                     onModelCreating,
@@ -56,12 +62,25 @@ internal class DbContextConfigurationExtractor : IPropertyLengthExtractor
                 )
             )
             {
-                // Return the EntityTypeInfo for this entity type
-                return new EntityTypeInfo(entityType, configs);
+                continue;
             }
+
+            // Configurations are collected per entity type across the whole method, so a type used in
+            // several Entity<T>() calls would otherwise be added more than once.
+            if (!seenEntityTypes.Add(entityType))
+            {
+                continue;
+            }
+
+            entities.Add(
+                new KeyValuePair<ITypeSymbol, IReadOnlyCollection<PropertyMaxLength>>(
+                    entityType,
+                    configs
+                )
+            );
         }
 
-        return null;
+        return EntityTypeInfoFactory.CreateMany(entities, typeSyntax, semanticModel);
     }
 
     private static bool IsDbContextClass(ISymbol? classSymbol)
