@@ -10,7 +10,7 @@ namespace EntityLengths.Generator.Core;
 /// An immutable array with structural equality, so it can safely flow through the
 /// incremental generator pipeline without breaking output caching.
 /// </summary>
-public readonly struct EquatableArray<T>(ImmutableArray<T> values)
+internal readonly struct EquatableArray<T>(ImmutableArray<T> values)
     : IEquatable<EquatableArray<T>>,
         IReadOnlyList<T>
     where T : IEquatable<T>

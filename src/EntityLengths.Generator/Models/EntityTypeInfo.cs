@@ -12,7 +12,7 @@ namespace EntityLengths.Generator.Models;
 /// <param name="DeclaringNamespace">Namespace of the type that declared the lengths (entity, configuration or DbContext).</param>
 /// <param name="DeclaringTypeName">Simple name of the type that declared the lengths.</param>
 /// <param name="StringProperties">The discovered property lengths.</param>
-public sealed record EntityTypeInfo(
+internal sealed record EntityTypeInfo(
     string EntityName,
     string EntityNamespace,
     string DeclaringNamespace,
