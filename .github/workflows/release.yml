@@ -1,0 +1,94 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, without the leading v (e.g. 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      DOTNET_NOLOGO: true
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          # The tests and samples multi-target net8.0-net10.0, so every runtime must be present.
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Publishing $version"
+
+      - name: Restore
+        run: dotnet restore EntityLengths.Generator.sln
+
+      - name: Build
+        run: dotnet build EntityLengths.Generator.sln -c Release --no-restore -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Test
+        run: dotnet test EntityLengths.Generator.sln -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack src/EntityLengths.Generator -c Release --no-build -o artifacts -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Check the package declares no dependencies
+        # An analyzer package must not put Roslyn (or anything else) in its dependency graph: it would
+        # force its version range onto every consumer and break restores that pull Roslyn in through
+        # another package, such as Microsoft.EntityFrameworkCore.Design (NU1107 / NU1608).
+        run: |
+          unzip -p artifacts/*.nupkg '*.nuspec' > package.nuspec
+          if grep -q '<dependency ' package.nuspec; then
+            echo "The package must not declare dependencies, found:"
+            grep '<dependency ' package.nuspec
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ steps.version.outputs.version }}
+          path: artifacts/*.*nupkg
+
+      # --skip-duplicate keeps a re-run from failing when a package version is already live.
+      - name: Push to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::NUGET_API_KEY is not set. Add it with: gh secret set NUGET_API_KEY"
+            exit 1
+          fi
+          dotnet nuget push "artifacts/*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.nupkg --generate-notes
