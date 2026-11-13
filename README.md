@@ -54,8 +54,8 @@ To learn more about the war and how you can help, [click here](https://war.ukrai
 ## Supported frameworks
 
 The generator ships as a `netstandard2.0` analyzer, which is what Roslyn loads, and works in projects
-targeting **.NET 8, .NET 9 and .NET 10**. Tests and samples are built and run against all three, each
-with the matching EF Core line (8.0.x, 9.0.x, 10.0.x).
+targeting **.NET 10 and .NET 11**. Tests and samples are built and run against both, each with the
+matching EF Core line (10.0.x, 11.0.x).
 
 ## Installation
 
@@ -318,7 +318,7 @@ public static partial class Constants
 ## Building this repository
 
 ```bash
-dotnet build          # generator, tests and both samples, for net8.0 / net9.0 / net10.0
+dotnet build          # generator, tests and both samples, for net10.0 / net11.0
 dotnet test
 dotnet pack src/EntityLengths.Generator -c Release -o artifacts
 ```

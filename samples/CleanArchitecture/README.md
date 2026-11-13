@@ -31,7 +31,7 @@ assemblies. Infrastructure sees them through its Domain reference.
 ## Running it
 
 ```bash
-dotnet run --project samples/CleanArchitecture/MyApp.Api --framework net9.0
+dotnet run --project samples/CleanArchitecture/MyApp.Api --framework net10.0
 ```
 
 Output:
@@ -59,7 +59,7 @@ a reviewable diff. Treat it as checked-in generated code and never edit it by ha
 
 ## Multi-targeting
 
-All three projects build for `net8.0`, `net9.0` and `net10.0` (see `$(SupportedTargetFrameworks)` in
+All three projects build for `net10.0` and `net11.0` (see `$(SupportedTargetFrameworks)` in
 `Directory.Build.props`), with the EF Core version following the target framework. The inner builds
 run in parallel and all write the same constants file; the generator only rewrites it when the
 content actually changes.
