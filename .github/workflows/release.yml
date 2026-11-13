@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # NuGet trusted publishing (OIDC)
 
 jobs:
   publish:
@@ -72,15 +73,19 @@ jobs:
           name: packages-${{ steps.version.outputs.version }}
           path: artifacts/*.*nupkg
 
+      # Trusted publishing: swaps the GitHub OIDC token for a NuGet API key that lives for 1 hour.
+      # Needs a matching policy on nuget.org (owner TarasKovalenko, this repo, workflow release.yml).
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: TarasKovalenko
+
       # --skip-duplicate keeps a re-run from failing when a package version is already live.
       - name: Push to NuGet
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "::error::NUGET_API_KEY is not set. Add it with: gh secret set NUGET_API_KEY"
-            exit 1
-          fi
           dotnet nuget push "artifacts/*.nupkg" \
             --api-key "$NUGET_API_KEY" \
             --source https://api.nuget.org/v3/index.json \
