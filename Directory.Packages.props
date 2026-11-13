@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0"/>
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0"/>
         <PackageVersion Include="xunit" Version="2.9.3"/>
         <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1"/>
     </ItemGroup>
@@ -25,16 +25,12 @@
       EF Core follows the target framework, so multi-targeted projects exercise the generator against
       every supported EF Core line instead of only the newest one.
     -->
-    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.33"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.22"/>
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
-        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.14"/>
+        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.15"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+        <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0"/>
     </ItemGroup>
 
 </Project>
